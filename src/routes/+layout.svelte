@@ -1,8 +1,26 @@
-<script>
+<script lang="ts">
 	import Header from './Header.svelte';
 	import './styles.css';
+
+    import { FirebaseApp } from 'sveltefire';
+    import { initializeApp } from 'firebase/app';
+    import { getFirestore } from 'firebase/firestore';
+    import { getAuth } from 'firebase/auth';
+
+    // Initialize Firebase
+    const app = initializeApp({
+		apiKey: import.meta.env.VITE_API_KEY,
+		authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+		projectId: import.meta.env.VITE_PROJECT_ID,
+		storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+		messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+		appId: import.meta.env.VITE_APP_ID
+	});
+    const firestore = getFirestore(app);
+    const auth = getAuth(app);
 </script>
 
+<FirebaseApp {auth} {firestore}>
 <div class="app">
 	<Header />
 
@@ -14,6 +32,7 @@
 		<p>visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to learn SvelteKit</p>
 	</footer>
 </div>
+</FirebaseApp>
 
 <style>
 	.app {

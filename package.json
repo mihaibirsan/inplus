@@ -35,5 +35,11 @@
 		"vite": "^5.0.3",
 		"vitest": "^1.0.0"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"dotenv": "^16.3.1",
+		"firebase": "^9.23.0",
+		"firebase-tools": "^13.0.2",
+		"sveltefire": "^0.4.3"
+	}
 }

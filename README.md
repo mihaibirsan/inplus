@@ -1,6 +1,15 @@
 # inplus
 "Eu cred că știm cu toții cine e în plus" — Bovarius
 
+# SvelteFire
+
+[SvelteFire Documentation (fireship.io)](https://sveltefire.fireship.io/guide/start)
++ Setup Anonymous authentication provider at https://console.firebase.google.com/u/0/project/inplus-game/authentication/providers
++ Setup default Firestore database at https://console.firebase.google.com/u/0/project/inplus-game/firestore
+  + with one collection "posts" and a single document with the id "id" and properties
+    - title: "Hello World!"
+    - content: "A simple document in a collection."
+
 # create-svelte
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
