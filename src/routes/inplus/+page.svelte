@@ -4,6 +4,32 @@
   const { auth, firestore } = getFirebaseContext();
   import { signInAnonymously } from "firebase/auth";
 	import { doc, setDoc } from 'firebase/firestore';
+	import Secret from './Secret.svelte';
+
+  const COMMON_SECRETS = `
+Couch
+Coffee table
+Lamp
+Television
+Refrigerator
+Microwave
+Toaster
+Blender
+Dishwasher
+Washing machine
+Dryer
+Vacuum cleaner
+Iron
+Alarm clock
+Toothbrush
+Hairdryer
+Mirror
+Kettle
+Oven
+Knife
+Fork
+Spoon
+  `.trim().split("\n");
 
   const user = userStore(auth);
   let userData;
@@ -86,10 +112,29 @@
 
   async function startGame() {
     if ($lobbyData) {
-      const updatedLobbyData = { gameStarted: true };
+      const selectedCommonSecret = COMMON_SECRETS[Math.floor(Math.random() * COMMON_SECRETS.length)];
+      const playerWhoIsIt = $lobbyData.players[Math.floor(Math.random() * $lobbyData.players.length)];
+      const playerSecrets = $lobbyData.players.map(player => {
+        if (player === playerWhoIsIt) {
+          return "Tu ești";
+        } else {
+          return selectedCommonSecret;
+        }
+      });
+      const updatedLobbyData = { gameStarted: true, playerSecrets };
       await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
     }
   }
+
+  async function endGame() {
+    if ($lobbyData) {
+      const updatedLobbyData = { gameStarted: false, playersReady: [] };
+      await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
+    }
+  }
+
+  let mySecret: string | null = null;
+  $: mySecret = $lobbyData && $user && $lobbyData.playerSecrets[$lobbyData.players.indexOf($user.uid)];
 </script>
 
 <SignedIn let:user let:signOut>
@@ -114,44 +159,52 @@
             <button>Create new lobby</button>
           </form>
         {:else}
-          <p>Lobby: {$lobbyData.name} ({lobbyId})</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Ready</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each $lobbyData.players as player (player)}
+          {#if !$lobbyData.gameStarted}
+            <p>Lobby: {$lobbyData.name} ({lobbyId})</p>
+            <table>
+              <thead>
                 <tr>
-                  <td>{player}</td>
-                  <td>{($lobbyData.playersReady.includes(player) ? 'Yes' : 'No')}</td>
+                  <th>Player</th>
+                  <th>Ready</th>
                 </tr>
-              {/each}
-            </tbody>
-          </table>
-          {#if !userIsInLobby}
-            <button on:click={joinLobby}>Join this lobby</button>
-          {:else}
-            {#if !userIsReady}
-              <button on:click={setUserReady}>Ready</button>
+              </thead>
+              <tbody>
+                {#each $lobbyData.players as player (player)}
+                  <tr>
+                    <td>{player}</td>
+                    <td>{($lobbyData.playersReady.includes(player) ? 'Yes' : 'No')}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+            {#if !userIsInLobby}
+              <button on:click={joinLobby}>Join this lobby</button>
             {:else}
-              <button on:click={setUserNotReady}>Unready</button>
+              {#if !userIsReady}
+                <button on:click={setUserReady}>Ready</button>
+              {:else}
+                <button on:click={setUserNotReady}>Unready</button>
+              {/if}
             {/if}
-          {/if}
-          {#if userIsHost}
-            <p>You are the host</p>
-            {#if allPlayersReady}
-              <button on:click={startGame}>Start game</button>
+            {#if userIsHost}
+              <p>You are the host</p>
+              {#if allPlayersReady}
+                <button on:click={startGame}>Start game</button>
+              {:else}
+                <p>Waiting for all players to be ready. A minimum of 3 players is necessary.</p>
+              {/if}
             {:else}
-              <p>Waiting for all players to be ready. A minimum of 3 players is necessary.</p>
+              {#if allPlayersReady}
+                <p>Waiting for host to start the game.</p>
+              {:else}
+                <p>Waiting for all players to be ready. A minimum of 3 players is necessary.</p>
+              {/if}
             {/if}
           {:else}
-            {#if allPlayersReady}
-              <p>Waiting for host to start the game.</p>
-            {:else}
-              <p>Waiting for all players to be ready. A minimum of 3 players is necessary.</p>
+            <p>Game started!</p>
+            <Secret>{mySecret}</Secret>
+            {#if userIsHost}
+              <button on:click={endGame}>End game</button>
             {/if}
           {/if}
         {/if}
