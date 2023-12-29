@@ -5,32 +5,10 @@
   import { signInAnonymously } from "firebase/auth";
 	import { doc, getDoc, setDoc } from 'firebase/firestore';
 	import Secret from './Secret.svelte';
+  import { SETS } from './sets.ts';
 
   const YOU_RE_IT = "Tu ești";
-  const COMMON_SECRETS = `
-Couch
-Coffee table
-Lamp
-Television
-Refrigerator
-Microwave
-Toaster
-Blender
-Dishwasher
-Washing machine
-Dryer
-Vacuum cleaner
-Iron
-Alarm clock
-Toothbrush
-Hairdryer
-Mirror
-Kettle
-Oven
-Knife
-Fork
-Spoon
-  `.trim().split("\n");
+  const SET_INDEX = 0;
 
   const user = userStore(auth);
   let userData;
@@ -132,7 +110,7 @@ Spoon
 
   async function startGame() {
     if ($lobbyData) {
-      const selectedCommonSecret = COMMON_SECRETS[Math.floor(Math.random() * COMMON_SECRETS.length)];
+      const selectedCommonSecret = SETS[SET_INDEX].items[Math.floor(Math.random() * SETS[SET_INDEX].items.length)];
       const playerWhoIsIt = $lobbyData.players[Math.floor(Math.random() * $lobbyData.players.length)];
       const playerSecrets = $lobbyData.players.map(player => {
         if (player === playerWhoIsIt) {
