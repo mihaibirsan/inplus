@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { SignedIn, SignedOut, docStore, getFirebaseContext, userStore } from 'sveltefire';
+  import { SignedIn, SignedOut, collectionStore, docStore, getFirebaseContext, userStore } from 'sveltefire';
   const { auth, firestore } = getFirebaseContext();
   import { signInAnonymously } from "firebase/auth";
-	import { doc, setDoc } from 'firebase/firestore';
+	import { doc, getDoc, setDoc } from 'firebase/firestore';
 	import Secret from './Secret.svelte';
 
   const YOU_RE_IT = "Tu ești";
@@ -111,6 +111,11 @@ Spoon
   let allPlayersReady: boolean = false;
   $: allPlayersReady = $lobbyData && $lobbyData.players.length > 2 && $lobbyData.players.length === $lobbyData.playersReady.length;
 
+  const users = collectionStore(firestore!, 'users');
+  function username(userId: string) {
+    return $users && $users.find(({ id }) => id === userId)?.username || userId;
+  }
+
   let playerScores = [];
   $: playerScores = $lobbyData && $lobbyData.scoresheet && $lobbyData.players.map(player => {
     console.log(`Recalculating score for ${player}`);
@@ -198,7 +203,7 @@ Spoon
               <tbody>
                 {#each $lobbyData.players as player, i (player)}
                   <tr>
-                    <td>{player}</td>
+                    <td>{username(player)}</td>
                     <td>{($lobbyData.playersReady.includes(player) ? 'Yes' : 'No')}</td>
                     <td>{playerScores && playerScores[i]}</td>
                   </tr>
@@ -239,7 +244,7 @@ Spoon
                   {#each $lobbyData.players as player, i (player)}
                     <label>
                       <input type="checkbox" bind:checked={playerWinners[i]} />
-                      {player}
+                      {username(player)}
                     </label>
                   {/each}
                   <button on:click={endGame}>End game</button>
