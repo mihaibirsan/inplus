@@ -6,6 +6,7 @@
 	import { doc, setDoc } from 'firebase/firestore';
 	import Secret from './Secret.svelte';
 
+  const YOU_RE_IT = "Tu ești";
   const COMMON_SECRETS = `
 Couch
 Coffee table
@@ -110,25 +111,50 @@ Spoon
   let allPlayersReady: boolean = false;
   $: allPlayersReady = $lobbyData && $lobbyData.players.length > 2 && $lobbyData.players.length === $lobbyData.playersReady.length;
 
+  let playerScores = [];
+  $: playerScores = $lobbyData && $lobbyData.scoresheet && $lobbyData.players.map(player => {
+    console.log(`Recalculating score for ${player}`);
+    const score = $lobbyData.scoresheet.map(scoresheet => {
+      const playerIndexInScoresheet = scoresheet.players.findIndex(p => p === player);
+      if (playerIndexInScoresheet !== -1) {
+        return scoresheet.playerWinners[playerIndexInScoresheet] ? 1 : 0;
+      } else {
+        return 0;
+      }
+    }).reduce((a, b) => a + b, 0);
+    return score;
+  });
+
   async function startGame() {
     if ($lobbyData) {
       const selectedCommonSecret = COMMON_SECRETS[Math.floor(Math.random() * COMMON_SECRETS.length)];
       const playerWhoIsIt = $lobbyData.players[Math.floor(Math.random() * $lobbyData.players.length)];
       const playerSecrets = $lobbyData.players.map(player => {
         if (player === playerWhoIsIt) {
-          return "Tu ești";
+          return YOU_RE_IT;
         } else {
           return selectedCommonSecret;
         }
       });
-      const updatedLobbyData = { gameStarted: true, playerSecrets };
+      const updatedLobbyData = { gameStarted: true, gameStartedAt: Date.now(), playerSecrets };
       await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
     }
   }
 
+  let endGameTriggered: boolean = false;
+  let playerWinners: boolean[] = [];
+
   async function endGame() {
     if ($lobbyData) {
-      const updatedLobbyData = { gameStarted: false, playersReady: [] };
+      const updatedScoresheet = [ ...($lobbyData.scoresheet || []), {
+        gameStartedAt: $lobbyData.gameStartedAt || Date.now(),
+        gameEndedAt: Date.now(),
+        players: $lobbyData.players,
+        playerSecrets: $lobbyData.playerSecrets,
+        playerWinners: $lobbyData.players.map((player, i) => playerWinners[i] || false),
+      } ];
+      const updatedLobbyData = { gameStarted: false, scoresheet: updatedScoresheet, playersReady: [] };
+      console.log(updatedLobbyData)
       await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
     }
   }
@@ -166,13 +192,15 @@ Spoon
                 <tr>
                   <th>Player</th>
                   <th>Ready</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody>
-                {#each $lobbyData.players as player (player)}
+                {#each $lobbyData.players as player, i (player)}
                   <tr>
                     <td>{player}</td>
                     <td>{($lobbyData.playersReady.includes(player) ? 'Yes' : 'No')}</td>
+                    <td>{playerScores && playerScores[i]}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -204,7 +232,20 @@ Spoon
             <p>Game started!</p>
             <Secret>{mySecret}</Secret>
             {#if userIsHost}
-              <button on:click={endGame}>End game</button>
+              {#if !endGameTriggered}
+                <button on:click={() => endGameTriggered = true}>End game</button>
+              {:else}
+                <form>
+                  {#each $lobbyData.players as player, i (player)}
+                    <label>
+                      <input type="checkbox" bind:checked={playerWinners[i]} />
+                      {player}
+                    </label>
+                  {/each}
+                  <button on:click={endGame}>End game</button>
+                </form>
+                <button on:click={() => endGameTriggered = false}>Cancel end game</button>
+              {/if}
             {/if}
           {/if}
         {/if}
