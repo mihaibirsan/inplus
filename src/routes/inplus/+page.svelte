@@ -67,6 +67,15 @@
     }
   }
 
+  async function leaveLobby() {
+    if ($user && $lobbyData) {
+      const updatedPlayers = $lobbyData.players.filter(player => player !== $user.uid);
+      const updatedLobbyData = { players: updatedPlayers };
+      await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
+      lobbyId = null;
+    }
+  }
+
   let userIsReady: boolean = false;
   $: userIsReady = $lobbyData && $user && $lobbyData.playersReady.includes($user.uid);
 
@@ -193,6 +202,7 @@
             {:else}
               {#if !userIsReady}
                 <button on:click={setUserReady}>Ready</button>
+                <button on:click={leaveLobby}>Leave this lobby</button>
               {:else}
                 <button on:click={setUserNotReady}>Unready</button>
               {/if}
