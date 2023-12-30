@@ -128,7 +128,9 @@
           return selectedCommonSecret;
         }
       });
-      const updatedLobbyData = { gameStarted: true, gameStartedAt: Date.now(), playerSecrets };
+      // Random player who is not it
+      const startingPlayer = $lobbyData.players.filter(player => player !== playerWhoIsIt)[Math.floor(Math.random() * ($lobbyData.players.length - 1))];
+      const updatedLobbyData = { gameStarted: true, gameStartedAt: Date.now(), startingPlayer, playerSecrets };
       await setDoc(doc(firestore, `lobbies/${lobbyId}`), updatedLobbyData, { merge: true });
     }
   }
@@ -152,7 +154,7 @@
   }
 
   let mySecret: string | null = null;
-  $: mySecret = $lobbyData && $user && $lobbyData.playerSecrets[$lobbyData.players.indexOf($user.uid)];
+  $: mySecret = $lobbyData && $user && $lobbyData.playerSecrets && $lobbyData.playerSecrets[$lobbyData.players.indexOf($user.uid)];
 </script>
 
 <SignedIn let:user let:signOut>
@@ -222,7 +224,7 @@
               {/if}
             {/if}
           {:else}
-            <p>Game started!</p>
+            <p>Game started! First player: {username($lobbyData.startingPlayer)}</p>
             <Secret>{mySecret}</Secret>
             {#if userIsHost}
               {#if !endGameTriggered}
